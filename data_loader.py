@@ -18,19 +18,29 @@ def load_data(snr=None, percent=0.0):
     data2 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_all_loading.mat')
     data3 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data_half_loading.mat')
     data4 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_line_loading.mat')
+    data5 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_line_loading.mat')
 
     data = data2
-    train_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
+    train_load2 = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
-                                    data['ftem'].astype('float64')], -1), 0)
-    train_resp = np.expand_dims(np.stack([data['ux'].astype('float64')*1e4,
+                                    data['ftem'].astype('float64')], -1), 0) /1e2
+    train_resp2 = np.expand_dims(np.stack([data['ux'].astype('float64')*1e4,
                                     data['uy'].astype('float64')*1e4,
                                     data['utem'].astype('float64')], -1), 0)
+    data = data2
+    train_load3 = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
+                                    -data['fy'].astype('float64')/1e5,
+                                    data['ftem'].astype('float64')], -1), 0) /1e2
+    train_resp3 = np.expand_dims(np.stack([data['ux'].astype('float64')*1e4,
+                                    data['uy'].astype('float64')*1e4,
+                                    data['utem'].astype('float64')], -1), 0)
+    train_load = train_load3#np.concatenate([train_load2, train_load3], 0)
+    train_resp = train_resp3#np.concatenate([train_resp2, train_resp3], 0)
 
     data = data4
     test_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
-                                    data['ftem'].astype('float64')], -1), 0)
+                                    data['ftem'].astype('float64')], -1), 0) /1e2
     test_resp = np.expand_dims(np.stack([data['ux'].astype('float64')*1e4,
                                     data['uy'].astype('float64')*1e4,
                                     data['utem'].astype('float64')], -1), 0)
@@ -46,7 +56,7 @@ def load_data(snr=None, percent=0.0):
                 np.random.seed(1)
                 percent = train_load * 0.01
                 noise = percent * np.random.normal(size=train_load.shape, scale=1)#np.random.uniform(0,1,size=train_load.shape)#
-                train_response_w_noise = (1) * train_resp  + noise
+                train_response_w_noise = (1) * train_resp  #+ noise
 
         for i in range(test_load.shape[0]):
             for j in range(test_load.shape[-1]):
@@ -75,7 +85,7 @@ def load_data(snr=None, percent=0.0):
         # resp = response_w_noise
         # load = loading_w_noise
 
-    rho = [212e0, 0.288, 16., 1.2e-4] # E, mu, k, alpha
+    rho = [212e-2, 0.288, 16e-2, 12e-5] # E, mu, k, alpha
 
     data = {'num_node': num_node,
             'rho': rho,
