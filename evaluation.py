@@ -219,19 +219,23 @@ def visualization(evaluator, data):
         mat = result[9*i:9*(i+1)]
         print(mat.reshape(3,3))
         print(np.sum(mat))
-    print(model.wxt_ref.reshape(3,3))
-    print(np.sum(model.wxt_ref))
-    print(model.wyt_ref.reshape(3,3))
-    print(np.sum(model.wyt_ref))
+    print(model.w_ref['xt'].reshape(3,3))
+    print(np.sum(model.w_ref['xt']))
+    print(model.w_ref['yt'].reshape(3,3))
+    print(np.sum(model.w_ref['yt']))
     plt.show()
 
 
 if __name__ == "__main__":
-    from therm_elast_train_7filters import * # not unique
+    from therm_elast_model import * # not unique
     # from therm_elast_train_9filters_v2 import * # not unique
 
-    cfg = {'lr': 0.001,
-           'epoch': 1,
+    cfg = {'all_para': ['xx','xy','xt',
+                        'yx','yy','yt',
+                        'tx','ty','tt'], # DO NOT CHANGE ORDER
+           # 'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
+           'unknown_para': ['xy','xt','yx', 'yt', 'tx', 'ty'], # off diagonal, (1) converges with random init. (2)takes very long with zero init, converging but not to reference solution
+           # 'unknown_para': ['xx', 'yy', 'tt'], # diagonal, converge to reference solution
            }
 
     # load data
@@ -243,7 +247,21 @@ if __name__ == "__main__":
     # train the network
     evaluator = Evaluator(model, data)
     result = evaluator.run_newton()#run_trust_ncg
-    #evaluator.sess.run(model.loss,{model.trainable_var_pl:model.trainable_var_ref,model.load_pl:data['train_load'],model.resp_pl:data['train_resp']})
+    # evaluator.sess.run(model.w_tf['yy'], {model.trainable_var_pl: result}).tolist()
+    # evaluator.sess.run(model.loss, {model.trainable_var_pl: model.trainable_var_ref, model.load_pl: data['train_load'],  model.resp_pl: data['train_resp']})
+
+    pred1 = evaluator.get_pred_load(result)
+    pred2 = evaluator.get_pred_load(model.trainable_var_ref)
+    print('l2 err: ',np.mean((result-model.trainable_var_ref)**2)/np.mean(model.trainable_var_ref**2))
+    plt.figure(figsize=(10,3))
+    for i in range(3):
+        plt.subplot(2, 3, i + 1)
+        plt.imshow(pred1[0, 1:-1, 1:-1, i])
+        plt.colorbar()
+        plt.subplot(2, 3, 3+ i + 1)
+        plt.imshow(pred1[0, 1:-1, 1:-1, i] - pred2[0, 1:-1, 1:-1, i])
+        plt.colorbar()
+    plt.show()
 
     # visualize training result
     visualization(evaluator,data)
