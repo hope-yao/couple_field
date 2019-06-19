@@ -51,6 +51,7 @@ class FEA_Net_h():
                                                 self.wyt_np.flatten()], 0)
         self.trainable_var_ref = np.concatenate([self.wxt_ref.flatten(),
                                                 self.wyt_ref.flatten()], 0)
+
         self.trainable_var_pl = tf.placeholder(tf.float64, shape=(9 * 2,), name='filter_vector')
 
         wxt_tf, wyt_tf = tf.split(self.trainable_var_pl, 2)
@@ -157,8 +158,8 @@ class FEA_Net_h():
     def get_loss(self):
         self.diff = self.load_pred - self.load_pl
         diff_not_on_bc = self.apply_bc(self.diff)
-        # self.l1_error = tf.reduce_mean(diff_not_on_bc**2)
-        self.l1_error = tf.reduce_mean((diff_not_on_bc*self.apply_bc(self.resp_pl))**2)
+        self.l1_error = tf.reduce_mean(diff_not_on_bc**2)
+        # self.l1_error = tf.reduce_mean((diff_not_on_bc*self.apply_bc(self.resp_pl))**2)
         self.loss = self.l1_error #+ 100*self.singula_penalty
         return self.loss
 

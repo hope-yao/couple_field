@@ -18,8 +18,11 @@ def load_data(snr=None, percent=0.0):
     data2 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_all_loading.mat')
     data3 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data_half_loading.mat')
     data4 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_line_loading.mat')
+    #non binary loading
+    data5 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_linear_Temloading.mat')
+    data6 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_quadra_Temloading.mat')
 
-    data = data2
+    data = data3
     train_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
                                     data['ftem'].astype('float64')], -1), 0)
@@ -44,7 +47,7 @@ def load_data(snr=None, percent=0.0):
                 noise = percent * np.random.normal(size=train_load.shape, scale=1)
                 train_loading_w_noise = (1) * train_load #+ noise
                 np.random.seed(1)
-                percent = train_load * 0.01
+                percent *= train_load
                 noise = percent * np.random.normal(size=train_load.shape, scale=1)#np.random.uniform(0,1,size=train_load.shape)#
                 train_response_w_noise = (1) * train_resp  + noise
 

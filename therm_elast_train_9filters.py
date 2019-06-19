@@ -18,8 +18,8 @@ class FEA_Net_h():
         self.E, self.mu, self.k, self.alpha = self.rho = data['rho'] #
 
         # 3 dimensional in and out, defined on the nodes
-        self.load_pl = tf.placeholder(tf.float32, shape=(None, data['num_node'], data['num_node'], 3), name='load_pl')
-        self.resp_pl = tf.placeholder(tf.float32, shape=(None, data['num_node'], data['num_node'], 3), name='resp_pl')
+        self.load_pl = tf.placeholder(tf.float64, shape=(None, data['num_node'], data['num_node'], 3), name='load_pl')
+        self.resp_pl = tf.placeholder(tf.float64, shape=(None, data['num_node'], data['num_node'], 3), name='resp_pl')
 
         # get filters
         self.get_w_matrix()
@@ -66,7 +66,7 @@ class FEA_Net_h():
                                                 self.wxy_ref.flatten(),
                                                 self.wyy_ref.flatten(),
                                                 ],0)
-        self.trainable_var_pl = tf.placeholder(tf.float32, shape=(9*9,))
+        self.trainable_var_pl = tf.placeholder(tf.float64, shape=(9*9,))
 
         wtx_tf, wty_tf, wxt_tf, wyt_tf, wtt_tf, wxx_tf, wyx_tf, wxy_tf, wyy_tf = tf.split(self.trainable_var_pl,9)
 
@@ -81,15 +81,15 @@ class FEA_Net_h():
         self.wyy_tf = tf.reshape(wyy_tf,(3,3,1,1))
 
         # add constrains
-        self.singula_penalty = tf.abs(tf.reduce_sum(self.wtx_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wty_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wxt_tf))\
-                               + tf.abs(tf.reduce_sum(self.wyt_tf))\
-                               + tf.abs(tf.reduce_sum(self.wtt_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wxx_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wxy_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wyx_tf)) \
-                               + tf.abs(tf.reduce_sum(self.wyy_tf))
+        self.singula_penalty = (tf.reduce_sum(self.wtx_tf) **2
+                               + tf.reduce_sum(self.wty_tf) **2
+                               + tf.reduce_sum(self.wxt_tf) **2
+                               + tf.reduce_sum(self.wyt_tf) **2
+                               + tf.reduce_sum(self.wtt_tf) **2
+                               + tf.reduce_sum(self.wxx_tf) **2
+                               + tf.reduce_sum(self.wxy_tf) **2
+                               + tf.reduce_sum(self.wyx_tf) **2
+                               + tf.reduce_sum(self.wyy_tf) **2)
             # self.E = tf.clip_by_value(self.E, 0, 1)
         # self.mu = tf.clip_by_value(self.mu, 0, 0.5)
 
@@ -107,44 +107,61 @@ class FEA_Net_h():
     def get_w_matrix_coupling(self):
         E, v = self.E, self.mu
         alpha = self.alpha
-        self.wtx_ref = np.zeros((3,3,1,1), dtype='float32')
-        self.wty_ref = np.zeros((3,3,1,1), dtype='float32')
-        coef = E * alpha / (6*(v-1)) / 400 *1e6
+        self.wtx_ref = np.zeros((3,3,1,1), dtype='float64')
+        self.wty_ref = np.zeros((3,3,1,1), dtype='float64')
+        coef = E * alpha / (6*(v-1)) / 400 *1e4
         self.wxt_ref = coef * np.asarray([[1, 0, -1],
                                       [4, 0, -4],
                                       [1, 0, -1]]
-                                     , dtype='float32').reshape(3,3,1,1)
+                                     , dtype='float64').reshape(3,3,1,1)
 
         self.wyt_ref = coef * np.asarray([[-1, -4, -1],
                                       [0, 0, 0],
                                       [1, 4, 1]]
-                                     , dtype='float32').reshape(3,3,1,1)
+                                     , dtype='float64').reshape(3,3,1,1)
 
     def get_w_matrix_thermal(self):
         w = -1/3. * self.k * np.asarray([[1., 1., 1.], [1., -8., 1.], [1., 1., 1.]])
-        w = np.asarray(w, dtype='float32')
+        w = np.asarray(w, dtype='float64')
         self.wtt_ref = w.reshape(3,3,1,1)
 
     def get_w_matrix_elast(self):
         E, mu = self.E, self.mu
-        cost_coef = E / 16. / (1 - mu ** 2)
-        wxx = cost_coef * np.asarray([
-            [-4 * (1 - mu / 3.), 16 * mu / 3., -4 * (1 - mu / 3.)],
-            [-8 * (1 + mu / 3.), 32. * (1 - mu / 3.), -8 * (1 + mu / 3.)],
-            [-4 * (1 - mu / 3.), 16 * mu / 3., -4 * (1 - mu / 3.)],
-        ], dtype='float32')
+        if 0:
+            cost_coef = E / 16. / (1 - mu ** 2)
+            wxx = cost_coef * np.asarray([
+                [-4 * (1 - mu / 3.), 16 * mu / 3., -4 * (1 - mu / 3.)],
+                [-8 * (1 + mu / 3.), 32. * (1 - mu / 3.), -8 * (1 + mu / 3.)],
+                [-4 * (1 - mu / 3.), 16 * mu / 3., -4 * (1 - mu / 3.)],
+            ], dtype='float64')
 
-        wxy = wyx = cost_coef * np.asarray([
-            [2 * (mu + 1), 0, -2 * (mu + 1)],
-            [0, 0, 0],
-            [-2 * (mu + 1), 0, 2 * (mu + 1)],
-        ], dtype='float32')
+            wxy = wyx = cost_coef * np.asarray([
+                [2 * (mu + 1), 0, -2 * (mu + 1)],
+                [0, 0, 0],
+                [-2 * (mu + 1), 0, 2 * (mu + 1)],
+            ], dtype='float64')
 
-        wyy = cost_coef * np.asarray([
-            [-4 * (1 - mu / 3.), -8 * (1 + mu / 3.), -4 * (1 - mu / 3.)],
-            [16 * mu / 3., 32. * (1 - mu / 3.), 16 * mu / 3.],
-            [-4 * (1 - mu / 3.), -8 * (1 + mu / 3.), -4 * (1 - mu / 3.)],
-        ], dtype='float32')
+            wyy = cost_coef * np.asarray([
+                [-4 * (1 - mu / 3.), -8 * (1 + mu / 3.), -4 * (1 - mu / 3.)],
+                [16 * mu / 3., 32. * (1 - mu / 3.), 16 * mu / 3.],
+                [-4 * (1 - mu / 3.), -8 * (1 + mu / 3.), -4 * (1 - mu / 3.)],
+            ], dtype='float64')
+        else:
+            wxx = E / 4. / (1 - mu**2) * np.asarray([
+                [-(1 - mu / 3.), 4* mu / 3., -(1 - mu / 3.)],
+                [-2*(1 + mu / 3.), 8*(1 - mu / 3.), -2*(1 + mu / 3.)],
+                [-(1 - mu / 3.), 4* mu / 3., -(1 - mu / 3.)],
+            ], dtype='float64')
+            wyy = E / 4. / (1 - mu**2) * np.asarray([
+                [-(1 - mu / 3.), -2*(1 + mu / 3.), -(1 - mu / 3.)],
+                [4* mu / 3., 8*(1 - mu / 3.), 4* mu / 3.],
+                [-(1 - mu / 3.), -2*(1 + mu / 3.), -(1 - mu / 3.)],
+            ], dtype='float64')
+            wxy = wyx = E / 8. / (1 - mu) * np.asarray([
+                [1, 0, -1],
+                [0, 0, 0],
+                [-1, 0, 1],
+            ], dtype='float64')
 
         self.wxx_ref = wxx.reshape(3,3,1,1)
         self.wxy_ref = wxy.reshape(3,3,1,1)
@@ -170,8 +187,8 @@ class FEA_Net_h():
         self.diff = self.load_pred - self.load_pl
         diff_not_on_bc = self.apply_bc(self.diff)
         self.l1_error = tf.reduce_mean(diff_not_on_bc**2)
-        # self.l1_error = tf.reduce_mean((self.diff_not_on_bc*self.resp_pl[:,1:-1,1:-1,:])**2)
-        self.loss = self.l1_error #+ self.singula_penalty
+        # self.l1_error = tf.reduce_mean((diff_not_on_bc*self.apply_bc(self.resp_pl))**2)
+        self.loss = self.l1_error #+ 100*self.singula_penalty
         return self.loss
 
     def get_grad(self):
@@ -215,7 +232,7 @@ class FEA_Net_h():
         self.new_load = load
         self.d_matrix = self.get_dmat()
         self.bc_mask = self.get_bc_mask()
-        self.u_in = tf.placeholder(tf.float32, load.shape, name='u_in')
+        self.u_in = tf.placeholder(tf.float64, load.shape, name='u_in')
         self.u_out = self.apply(self.u_in)
 
     def apply(self, u_in):

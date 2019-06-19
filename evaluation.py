@@ -59,7 +59,7 @@ class Evaluator(object):
         return self.hessian_value
 
     def get_pred_load(self,w):
-        feed_dict = {self.model.load_pl: data['train_load'],
+        feed_dict = {#self.model.load_pl: data['train_load'],
                       self.model.resp_pl: data['train_resp'],
                       self.model.trainable_var_pl: w.astype('float64')}
         pred_value = self.sess.run(self.model.load_pred, feed_dict)
@@ -77,7 +77,7 @@ class Evaluator(object):
         from scipy.optimize import minimize
         self.result = minimize(self.get_loss, self.model.trainable_var_np, method='Newton-CG',
                           jac=self.get_grads, hess=self.get_hessian,
-                          options={'xtol': 1e-15, 'disp': True})
+                          options={'xtol': 1e-25, 'disp': True})
         return self.result.x
 
     def run_trust_ncg(self):
@@ -146,7 +146,7 @@ def visualization(evaluator, data):
     evaluator.init_solve(load=data['test_load'], omega=2/3.)
     pred_i = np.zeros_like(data['test_resp'])  # data['test_resp']#
     resp_ref = data['test_resp']
-    pred_resp_ref = evaluator.run_forward(model.trainable_var_np, pred_i, resp_ref, max_itr=4000)
+    pred_resp_ref = evaluator.run_forward(model.trainable_var_ref, pred_i, resp_ref, max_itr=4000)
     s0 = evaluator.solution
 
     # test the model
@@ -227,14 +227,15 @@ def visualization(evaluator, data):
 
 
 if __name__ == "__main__":
-    from therm_elast_train_2filters import *
+    from therm_elast_train_7filters import * # not unique
+    # from therm_elast_train_9filters_v2 import * # not unique
 
     cfg = {'lr': 0.001,
            'epoch': 1,
            }
 
     # load data
-    data = load_data(percent=1)#snr=100#
+    data = load_data(percent=0.000)#snr=100#
 
     # build the network
     model = FEA_Net_h(data,cfg)
@@ -242,6 +243,7 @@ if __name__ == "__main__":
     # train the network
     evaluator = Evaluator(model, data)
     result = evaluator.run_newton()#run_trust_ncg
+    #evaluator.sess.run(model.loss,{model.trainable_var_pl:model.trainable_var_ref,model.load_pl:data['train_load'],model.resp_pl:data['train_resp']})
 
     # visualize training result
     visualization(evaluator,data)
