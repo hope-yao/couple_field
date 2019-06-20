@@ -233,8 +233,8 @@ if __name__ == "__main__":
     cfg = {'all_para': ['xx','xy','xt',
                         'yx','yy','yt',
                         'tx','ty','tt'], # DO NOT CHANGE ORDER
-           # 'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
-           'unknown_para': ['xy','xt','yx', 'yt', 'tx', 'ty'], # off diagonal, (1) converges with random init. (2)takes very long with zero init, converging but not to reference solution
+           'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
+           # 'unknown_para': ['xy','xt','yx', 'yt', 'tx', 'ty'], # off diagonal, (1) converges with random init. (2)takes very long with zero init, converging but not to reference solution
            # 'unknown_para': ['xx', 'yy', 'tt'], # diagonal, converge to reference solution
            }
 
@@ -252,7 +252,18 @@ if __name__ == "__main__":
 
     pred1 = evaluator.get_pred_load(result)
     pred2 = evaluator.get_pred_load(model.trainable_var_ref)
-    print('l2 err: ',np.mean((result-model.trainable_var_ref)**2)/np.mean(model.trainable_var_ref**2))
+    for para_i in cfg['all_para']:
+        w_est = evaluator.sess.run(model.w_tf[para_i], {model.trainable_var_pl:result})
+        w_ref = model.w_ref[para_i]
+        print(np.squeeze(w_est))
+        print(np.squeeze(w_ref))
+        print(np.sum(w_est),np.sum(w_ref))
+        err = np.mean((w_est - w_ref) ** 2) / np.mean(w_ref ** 2)
+        if para_i in cfg['unknown_para']:
+            print('{}, unknown, err: {}'.format(para_i, err))
+        else:
+            print('{}, known, err: {}'.format(para_i, err))
+
     plt.figure(figsize=(10,3))
     for i in range(3):
         plt.subplot(2, 3, i + 1)
