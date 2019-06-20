@@ -44,7 +44,7 @@ class FEA_Net_h():
             if para_i in self.cfg['unknown_para']:
                 # unknown physics
                 if 1:
-                    # np.random.seed(cnt)
+                    np.random.seed(2*cnt) # problem with multi-col-linearility will converge differently with different initial seed.
                     self.trainable_var_np += [10*np.random.randn(*self.w_ref[para_i].shape).flatten()] # initial guess with random number
                 else:
                     self.trainable_var_np += [np.zeros_like(self.w_ref[para_i]).flatten()] # initial guess with all zeros
@@ -56,27 +56,15 @@ class FEA_Net_h():
                 # known physics
                 self.w_tf[para_i] = tf.constant(self.w_ref[para_i])
 
-        wxx_diag = self.w_tf['xx'][1:2,1:2]
-        self.wxx_dominant_penalty = tf.exp(self.w_tf['xx'] - wxx_diag) \
-                                         + tf.exp(self.w_tf['xy'] - wxx_diag) \
-                                         + tf.exp(self.w_tf['xt'] - wxx_diag) \
-                                         + tf.exp(self.w_tf['yx'] - wxx_diag) \
-                                         + tf.exp(self.w_tf['tx'] - wxx_diag)
-        wyy_diag = self.w_tf['yy'][1:2,1:2]
-        self.wyy_dominant_penalty = tf.exp(self.w_tf['yy'] - wyy_diag) \
-                                         + tf.exp(self.w_tf['yx'] - wyy_diag) \
-                                         + tf.exp(self.w_tf['yt'] - wyy_diag) \
-                                         + tf.exp(self.w_tf['xy'] - wyy_diag) \
-                                         + tf.exp(self.w_tf['ty'] - wyy_diag)
+        wxx_diag = tf.abs(self.w_tf['xx'][1:2,1:2])
+        self.wxx_off_diag_sum = tf.abs(self.w_tf['xx']) + tf.abs(self.w_tf['xy']) + tf.abs(self.w_tf['xt'])
+        wyy_diag = tf.abs(self.w_tf['yy'][1:2,1:2])
+        self.wyy_off_diag_sum = tf.abs(self.w_tf['yy']) + tf.abs(self.w_tf['yx']) + tf.abs(self.w_tf['yt'])
         wtt_diag = self.w_tf['tt'][1:2,1:2]
-        self.wtt_dominant_penalty = tf.exp(self.w_tf['tt'] - wtt_diag) \
-                                         + tf.exp(self.w_tf['tx'] - wtt_diag) \
-                                         + tf.exp(self.w_tf['ty'] - wtt_diag) \
-                                         + tf.exp(self.w_tf['xt'] - wtt_diag) \
-                                         + tf.exp(self.w_tf['yt'] - wtt_diag)
-        self.diagonal_dominant_penalty = tf.reduce_mean(self.wxx_dominant_penalty) \
-                                         + tf.reduce_mean(self.wyy_dominant_penalty) \
-                                         + tf.reduce_mean(self.wtt_dominant_penalty)
+        self.wtt_off_diag_sum = tf.abs(self.w_tf['tt']) + tf.abs(self.w_tf['tx']) + tf.abs(self.w_tf['ty'])
+        self.diagonal_dominant_penalty = tf.exp(tf.reduce_mean(self.wxx_off_diag_sum - wxx_diag)) \
+                                         + tf.exp(tf.reduce_mean(self.wyy_off_diag_sum - wyy_diag)) \
+                                         + tf.exp(tf.reduce_mean(self.wtt_off_diag_sum - wtt_diag))
 
         self.trainable_var_np = np.concatenate(self.trainable_var_np,0)
         self.trainable_var_ref = np.concatenate(self.trainable_var_ref,0)
@@ -175,7 +163,7 @@ class FEA_Net_h():
         diff_not_on_bc = self.apply_bc(self.diff)
         self.l1_error = tf.reduce_mean(diff_not_on_bc**2)
         # self.l1_error = tf.reduce_mean((diff_not_on_bc*self.apply_bc(self.resp_pl))**2)
-        self.loss = self.l1_error + self.diagonal_dominant_penalty #+ 100*self.singula_penalty
+        self.loss = self.l1_error #+ 10*self.diagonal_dominant_penalty #+ 100*self.singula_penalty
         return self.loss
 
     def get_grad(self):
