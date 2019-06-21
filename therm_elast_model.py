@@ -44,14 +44,14 @@ class FEA_Net_h():
             if para_i in self.cfg['unknown_para']:
                 # unknown physics
                 if 1:
-                    np.random.seed(2*cnt) # problem with multi-col-linearility will converge differently with different initial seed.
+                    np.random.seed(11*cnt) # problem with multi-col-linearility will converge differently with different initial seed.
                     self.trainable_var_np += [10*np.random.randn(*self.w_ref[para_i].shape).flatten()] # initial guess with random number
                 else:
                     self.trainable_var_np += [np.zeros_like(self.w_ref[para_i]).flatten()] # initial guess with all zeros
                 self.trainable_var_ref += [self.w_ref[para_i].flatten()] # reference solution, ground truth
                 self.w_tf[para_i] = tf.reshape(w_tf_unknown[cnt], (3,3,1,1)) # placeholder for optimized input
                 cnt += 1
-                self.singula_penalty += tf.reduce_sum(self.w_tf[para_i]) **2
+                self.singula_penalty += tf.abs(tf.reduce_sum(self.w_tf[para_i]))
             else:
                 # known physics
                 self.w_tf[para_i] = tf.constant(self.w_ref[para_i])
@@ -160,10 +160,10 @@ class FEA_Net_h():
 
     def get_loss(self):
         self.diff = self.load_pred - self.load_pl
-        diff_not_on_bc = self.apply_bc(self.diff)
+        diff_not_on_bc = self.apply_bc(self.diff)#[:,:,:,0]
         self.l1_error = tf.reduce_mean(diff_not_on_bc**2)
         # self.l1_error = tf.reduce_mean((diff_not_on_bc*self.apply_bc(self.resp_pl))**2)
-        self.loss = self.l1_error #+ 10*self.diagonal_dominant_penalty #+ 100*self.singula_penalty
+        self.loss = self.l1_error  + 10*self.diagonal_dominant_penalty #+ 1*self.singula_penalty
         return self.loss
 
     def get_grad(self):

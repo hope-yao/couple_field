@@ -21,8 +21,11 @@ def load_data(snr=None, percent=0.0):
     #non binary loading
     data5 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_linear_Temloading.mat')
     data6 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_quadra_Temloading.mat')
+    data7 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads1.mat')
+    data8 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads3.mat')
+    data9 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxloads2.mat')
 
-    data = data3
+    data = data9
     train_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
                                     data['ftem'].astype('float64')], -1), 0)

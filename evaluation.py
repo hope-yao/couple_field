@@ -143,14 +143,14 @@ def relative_l2_err(a,b):
 
 def visualization(evaluator, data):
 
-    evaluator.init_solve(load=data['test_load'], omega=2.5/3.)
+    evaluator.init_solve(load=data['test_load'], omega=2/3.)
     pred_i = np.zeros_like(data['test_resp'])  # data['test_resp']#
     resp_ref = data['test_resp']
     pred_resp_ref = evaluator.run_forward(model.trainable_var_ref, pred_i, resp_ref, max_itr=4000)
     s0 = evaluator.solution
 
     # test the model
-    evaluator.init_solve(load=data['test_load'], omega=2.5/3.)
+    evaluator.init_solve(load=data['test_load'], omega=2/3.)
     pred_i = np.zeros_like(data['test_resp'])  # data['test_resp']#
     pred_resp = evaluator.run_forward(result, pred_i, resp_ref, max_itr=4000)
     s1 = evaluator.solution
@@ -235,8 +235,10 @@ if __name__ == "__main__":
                         'tx','ty','tt'], # DO NOT CHANGE ORDER
            # 'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
            # 'unknown_para': ['xy','xt','yx', 'yt', 'tx', 'ty'], # off diagonal, (1) converges with random init. (2)takes very long with zero init, converging but not to reference solution
+           'unknown_para': ['tt','xy','xt','yx', 'yt', 'tx', 'ty'],
            # 'unknown_para': ['xx', 'yy', 'tt'], # diagonal, converge to reference solution
-           'unknown_para': ['xx', 'yx', 'tx'], # same input channel multiple times, which is also multicollinear, and no unique solution
+           # 'unknown_para': ['xx', 'yx', 'tx'], # same input channel multiple times, which is also multicollinear, and no unique solution
+           # 'unknown_para': ['xx'],
            }
 
     # load data
