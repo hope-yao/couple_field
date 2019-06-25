@@ -80,6 +80,13 @@ class Evaluator(object):
                           options={'xtol': 1e-25, 'disp': True})
         return self.result.x
 
+    def run_trust_constr(self):
+        from scipy.optimize import minimize
+        self.result = minimize(self.get_loss, self.model.trainable_var_np, method='trust-constr',
+                          jac=self.get_grads, hess=self.get_hessian,
+                          options={'gtol': 1e-15, 'disp': True})
+        return self.result.x
+
     def run_trust_ncg(self):
         from scipy.optimize import minimize
         self.result = minimize(self.get_loss, self.model.trainable_var_np, method='trust-ncg',
@@ -143,14 +150,14 @@ def relative_l2_err(a,b):
 
 def visualization(evaluator, data):
 
-    evaluator.init_solve(load=data['test_load'], omega=2/3.)
+    evaluator.init_solve(load=data['test_load'], omega=1/3.)
     pred_i = np.zeros_like(data['test_resp'])  # data['test_resp']#
     resp_ref = data['test_resp']
     pred_resp_ref = evaluator.run_forward(model.trainable_var_ref, pred_i, resp_ref, max_itr=4000)
     s0 = evaluator.solution
 
     # test the model
-    evaluator.init_solve(load=data['test_load'], omega=2/3.)
+    evaluator.init_solve(load=data['test_load'], omega=1/3.)
     pred_i = np.zeros_like(data['test_resp'])  # data['test_resp']#
     pred_resp = evaluator.run_forward(result, pred_i, resp_ref, max_itr=4000)
     s1 = evaluator.solution
@@ -167,44 +174,56 @@ def visualization(evaluator, data):
     for i in range(3):
         plt.subplot(6, 3, i + 1)
         plt.imshow(data['train_load'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 3 + i + 1)
         plt.imshow(data['clean_train_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 6 + i + 1)
         plt.imshow(data['train_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 9 + i + 1)
         plt.imshow(data['clean_train_resp'][idx, 1:-1, 1:-1, i]-data['train_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 12 + i + 1)
         plt.imshow(pred_load[idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 15 + i + 1)
         plt.imshow(data['train_load'][idx, 1:-1, 1:-1, i] - pred_load[idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
 
     plt.figure(figsize=(6, 6))
     idx = 0  # which data to visualize
     for i in range(3):
         plt.subplot(6, 3, i + 1)
         plt.imshow(data['test_load'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 3 + i + 1)
         plt.imshow(data['test_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 6 + i + 1)
         plt.imshow(pred_resp[idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 9 + i + 1)
         plt.imshow(pred_resp_ref[idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 12 + i + 1)
         plt.imshow(pred_resp_ref[idx, 1:-1, 1:-1, i]-data['test_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
         plt.subplot(6, 3, 15 + i + 1)
         plt.imshow(pred_resp[idx, 1:-1, 1:-1, i]-data['test_resp'][idx, 1:-1, 1:-1, i])
-        plt.colorbar()
+        #plt.colorbar()
+        plt.axis('off')
 
     import seaborn as sns
     plt.figure()
@@ -233,23 +252,29 @@ if __name__ == "__main__":
     cfg = {'all_para': ['xx','xy','xt',
                         'yx','yy','yt',
                         'tx','ty','tt'], # DO NOT CHANGE ORDER
-           # 'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
+           'unknown_para': ['xx','xy','xt','yx', 'yy', 'yt', 'tx', 'ty', 'tt'], # (1) with random init, converge to something different, inference diverge (2)takes very long with zero init
            # 'unknown_para': ['xy','xt','yx', 'yt', 'tx', 'ty'], # off diagonal, (1) converges with random init. (2)takes very long with zero init, converging but not to reference solution
-           'unknown_para': ['tt','xy','xt','yx', 'yt', 'tx', 'ty'],
+           # 'unknown_para': ['xt', 'yt', 'tx', 'ty'],
+           # 'unknown_para': ['tt','xy','xt','yx', 'yt', 'tx', 'ty'],
            # 'unknown_para': ['xx', 'yy', 'tt'], # diagonal, converge to reference solution
            # 'unknown_para': ['xx', 'yx', 'tx'], # same input channel multiple times, which is also multicollinear, and no unique solution
-           # 'unknown_para': ['xx'],
+           # 'unknown_para': ['xx','xy','xt'],
+           # 'unknown_para': ['xx','yx','tx'],
            }
 
     # load data
-    data = load_data(percent=0.000)#snr=100#
+    data = load_data(percent=0.0)#snr=100#
 
     # build the network
     model = FEA_Net_h(data,cfg)
 
     # train the network
     evaluator = Evaluator(model, data)
-    result = evaluator.run_newton()#run_trust_ncg
+    result = evaluator.run_trust_constr()#run_newton()#run_trust_ncg
+    dict_pred = {model.trainable_var_pl: result, model.load_pl: data['train_load'],  model.resp_pl: data['train_resp']}
+    print(evaluator.sess.run([model.l1_error, model.diagonal_dominant_penalty], dict_pred))
+    dict_ref = {model.trainable_var_pl: model.trainable_var_ref, model.load_pl: data['train_load'],  model.resp_pl: data['train_resp']}
+    print(evaluator.sess.run([model.l1_error, model.diagonal_dominant_penalty], dict_ref))
     # evaluator.sess.run(model.w_tf['yy'], {model.trainable_var_pl: result}).tolist()
     # evaluator.sess.run(model.loss, {model.trainable_var_pl: model.trainable_var_ref, model.load_pl: data['train_load'],  model.resp_pl: data['train_resp']})
 
@@ -271,10 +296,12 @@ if __name__ == "__main__":
     for i in range(3):
         plt.subplot(2, 3, i + 1)
         plt.imshow(pred1[0, 1:-1, 1:-1, i])
-        plt.colorbar()
+        plt.axis('off')
+        #plt.colorbar()
         plt.subplot(2, 3, 3+ i + 1)
         plt.imshow(pred1[0, 1:-1, 1:-1, i] - pred2[0, 1:-1, 1:-1, i])
-        plt.colorbar()
+        plt.axis('off')
+        #plt.colorbar()
     plt.show()
 
     # visualize training result

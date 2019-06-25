@@ -14,18 +14,18 @@ def load_data(snr=None, percent=0.0):
     #data = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data_half_loading_y.mat')
 
     # coupled loading
-    data1 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data4.mat')
-    data2 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_all_loading.mat')
-    data3 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data_half_loading.mat')
-    data4 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_line_loading.mat')
+    data1 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data4.mat')#rank25
+    data2 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_all_loading.mat') #rank25
+    data3 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_data_half_loading.mat') #rank26
+    data4 = sio.loadmat('2D_thermoelastic_36by36_xy_fixed_single_line_loading.mat') #rank25
     #non binary loading
-    data5 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_linear_Temloading.mat')
-    data6 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_quadra_Temloading.mat')
-    data7 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads1.mat')
-    data8 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads3.mat')
-    data9 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxloads2.mat')
+    data5 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_linear_Temloading.mat') #rank25
+    data6 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_single_quadra_Temloading.mat') #rank26
+    data7 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads1.mat') #rank27
+    data8 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxcosyloads3.mat') #rank27
+    data9 = sio.loadmat('2D_thermoelastic_36by36_LefRigLow_fixed_QuaTemloads_sinxloads2.mat') #rank27
 
-    data = data9
+    data = data6
     train_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
                                     data['ftem'].astype('float64')], -1), 0)
@@ -33,7 +33,7 @@ def load_data(snr=None, percent=0.0):
                                     data['uy'].astype('float64')*1e4,
                                     data['utem'].astype('float64')], -1), 0)
 
-    data = data4
+    data = data8
     test_load = np.expand_dims(np.stack([-data['fx'].astype('float64')/1e5,
                                     -data['fy'].astype('float64')/1e5,
                                     data['ftem'].astype('float64')], -1), 0)
